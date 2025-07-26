@@ -100,42 +100,64 @@ export const json = {
       ]
     },
     {
-      "name": "page3",
-      "title": "About You (Optional)",
+      "name": "page8",
+      "title": "Product Quality - I",
       "elements": [
         {
-          "type": "dropdown",
-          "name": "About You",
-          "title": "Please select your age group:",
+          "type": "tagbox",
+          "name": "question12",
+          "title": "The taste of the item(s) I bought met or exceeded my expectations.",
+          "isRequired": true,
           "choices": [
-            "<18",
-            "18-25",
-            "26-40",
-            "41-60",
-            "61+"
+            {
+              "value": "1",
+              "text": "Strongly Disagree"
+            },
+            {
+              "value": "2",
+              "text": "Disagree"
+            },
+            {
+              "value": "3",
+              "text": "Neutral"
+            },
+            {
+              "value": "4",
+              "text": "Agree"
+            },
+            {
+              "value": "5",
+              "text": "Strongly Agree"
+            }
           ],
-          "placeholder": "Click for Dropdown"
+          "searchEnabled": false,
+          "hideSelectedItems": true
         },
         {
           "type": "tagbox",
-          "name": "question4",
-          "title": "Dietary preference",
+          "name": "question13",
+          "title": "The freshness of the baked goods was evident.",
+          "isRequired": true,
           "choices": [
             {
-              "value": "Item 1",
-              "text": "Vegetarian"
+              "value": "1",
+              "text": "Strongly Disagree"
             },
             {
-              "value": "Item 2",
-              "text": "Vegan"
+              "value": "2",
+              "text": "Disagree"
             },
             {
-              "value": "Item 3",
-              "text": "Gluten-free"
+              "value": 3,
+              "text": "Neutral"
             },
             {
-              "value": "Item 4",
-              "text": "No specific preference"
+              "value": "4",
+              "text": "Agree"
+            },
+            {
+              "value": "5",
+              "text": "Strongly Agree"
             }
           ],
           "searchEnabled": false,
@@ -143,6 +165,7 @@ export const json = {
         }
       ]
     },
+ 
     {
       "name": "page4",
       "title": "Product Quality - II",
@@ -317,64 +340,42 @@ export const json = {
       ]
     },
     {
-      "name": "page8",
-      "title": "Product Quality - I",
+      "name": "page3",
+      "title": "About You (Optional)",
       "elements": [
         {
-          "type": "tagbox",
-          "name": "question12",
-          "title": "The taste of the item(s) I bought met or exceeded my expectations.",
-          "isRequired": true,
+          "type": "dropdown",
+          "name": "About You",
+          "title": "Please select your age group:",
           "choices": [
-            {
-              "value": "1",
-              "text": "Strongly Disagree"
-            },
-            {
-              "value": "2",
-              "text": "Disagree"
-            },
-            {
-              "value": "3",
-              "text": "Neutral"
-            },
-            {
-              "value": "4",
-              "text": "Agree"
-            },
-            {
-              "value": "5",
-              "text": "Strongly Agree"
-            }
+            "<18",
+            "18-25",
+            "26-40",
+            "41-60",
+            "61+"
           ],
-          "searchEnabled": false,
-          "hideSelectedItems": true
+          "placeholder": "Click for Dropdown"
         },
         {
           "type": "tagbox",
-          "name": "question13",
-          "title": "The freshness of the baked goods was evident.",
-          "isRequired": true,
+          "name": "question4",
+          "title": "Dietary preference",
           "choices": [
             {
-              "value": "1",
-              "text": "Strongly Disagree"
+              "value": "Item 1",
+              "text": "Vegetarian"
             },
             {
-              "value": "2",
-              "text": "Disagree"
+              "value": "Item 2",
+              "text": "Vegan"
             },
             {
-              "value": 3,
-              "text": "Neutral"
+              "value": "Item 3",
+              "text": "Gluten-free"
             },
             {
-              "value": "4",
-              "text": "Agree"
-            },
-            {
-              "value": "5",
-              "text": "Strongly Agree"
+              "value": "Item 4",
+              "text": "No specific preference"
             }
           ],
           "searchEnabled": false,
