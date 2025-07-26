@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
         await loadAnalytics();
       }
     } catch (error) {
-      setLoginError('An unexpected error occurred');
+      setLoginError('An unexpected error occurred:'+`error`);
     } finally {
       setLoading(false);
     }
