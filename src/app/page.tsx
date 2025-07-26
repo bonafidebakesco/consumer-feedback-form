@@ -28,6 +28,15 @@ export default function QuizPage() {
 
     const completedRequiredFields = requiredFields.filter((element: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       const value = formData[element.name];
+      
+      // Handle opt-out case for the final page
+      if (pageIndex === totalPages - 1) {
+        const hasOptedOut = Array.isArray(formData.opt_out) && formData.opt_out.includes('opt_out');
+        if (hasOptedOut && ['name', 'email', 'phone'].includes(element.name)) {
+          return true; // Consider these fields as completed if opted out
+        }
+      }
+      
       if (element.type === 'checkbox') {
         return Array.isArray(value) && value.length > 0;
       } else if (element.type === 'rating') {
@@ -125,6 +134,14 @@ export default function QuizPage() {
             requiredFields.forEach((element: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                 const value = formData[element.name];
 
+                // Skip validation for personal details if user has opted out
+                if (currentPage === totalPages - 1) {
+                    const hasOptedOut = Array.isArray(formData.opt_out) && formData.opt_out.includes('opt_out');
+                    if (hasOptedOut && ['name', 'email', 'phone'].includes(element.name)) {
+                        return; // Skip validation for these fields if opted out
+                    }
+                }
+
                 if (element.type === 'text') {
                     // Validate text fields
                     if (element.name.toLowerCase().includes('name')) {
@@ -175,6 +192,15 @@ export default function QuizPage() {
             // Check if all required fields are completed
             const allRequiredCompleted = requiredFields.every((element: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                 const value = formData[element.name];
+                
+                // Skip validation for personal details if user has opted out
+                if (currentPage === totalPages - 1) {
+                    const hasOptedOut = Array.isArray(formData.opt_out) && formData.opt_out.includes('opt_out');
+                    if (hasOptedOut && ['name', 'email', 'phone'].includes(element.name)) {
+                        return true; // Consider these fields as completed if opted out
+                    }
+                }
+                
                 if (element.type === 'checkbox') {
                     return Array.isArray(value) && value.length > 0;
                 } else if (element.type === 'rating') {
@@ -235,15 +261,18 @@ export default function QuizPage() {
     const renderElement = (element: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         switch (element.type) {
             case 'checkbox':
-                return (
-                    <div key={element.name} className="mb-8">
-                        <h3 className="text-2xl font-bold mb-8 text-[#254569] leading-relaxed border-b-2 border-amber-200 pb-4 relative">
-                            <div className="text-[#254569] font-bold">
-                                {element.title}
-                            </div>
-                        </h3>
-                        <div className="checkbox-grid">
-                                                         {element.choices?.map((choice: any, index: number) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+                // Check if this is the opt-out checkbox on the contact page
+                const isOptOutCheckbox = element.name === 'opt_out' && currentPage === totalPages - 1;
+                
+                if (isOptOutCheckbox) {
+                    return (
+                        <div key={element.name} className={`opt-out-checkbox ${
+                            Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('opt_out') ? 'selected' : ''
+                        }`}>
+                            <svg className="privacy-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                            {element.choices?.map((choice: any, index: number) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
                                 <div
                                     key={index}
                                     className={`checkbox-option ${
@@ -275,56 +304,100 @@ export default function QuizPage() {
                                     <span className="text-sm font-medium">{choice.text}</span>
                                 </div>
                             ))}
-                            {element.showSelectAllItem && (
+                        </div>
+                    );
+                } else {
+                    return (
+                        <div key={element.name} className="mb-8">
+                            <h3 className="text-2xl font-bold mb-8 text-[#254569] leading-relaxed border-b-2 border-amber-200 pb-4 relative">
+                                <div className="text-[#254569] font-bold">
+                                    {element.title}
+                                </div>
+                            </h3>
+                            <div className="checkbox-grid">
+                                                             {element.choices?.map((choice: any, index: number) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
                                 <div
-                                    className={`checkbox-option select-all ${
-                                        Array.isArray(formData[element.name]) && (formData[element.name] as string[]).length === element.choices?.length ? 'selected' : ''
+                                    key={index}
+                                    className={`checkbox-option ${
+                                        Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes(choice.value) ? 'selected' : ''
                                     }`}
                                     onClick={() => {
-                                        const allValues = element.choices?.map((c: any) => c.value) || []; // eslint-disable-line @typescript-eslint/no-explicit-any
-                                        handleAnswer(element.name, allValues);
+                                        let currentValues: string[] = [];
+                                        const value = formData[element.name];
+                                        if (Array.isArray(value)) {
+                                            currentValues = value;
+                                        } else if (typeof value === 'string' && value.length > 0) {
+                                            currentValues = [value];
+                                        }
+                                        let newValues;
+                                        if (currentValues.includes(choice.value)) {
+                                            newValues = currentValues.filter((v) => v !== choice.value);
+                                        } else {
+                                            newValues = [...currentValues, choice.value];
+                                        }
+                                        handleAnswer(element.name, newValues);
                                     }}
                                 >
                                     <input
                                         type="checkbox"
-                                        checked={Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('none')}
+                                        checked={Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes(choice.value) || false}
                                         readOnly
                                         className="mr-3"
                                     />
-                                    <span className="font-semibold">{element.selectAllText}</span>
+                                    <span className="text-sm font-medium">{choice.text}</span>
+                                </div>
+                            ))}
+                                {element.showSelectAllItem && (
+                                    <div
+                                        className={`checkbox-option select-all ${
+                                            Array.isArray(formData[element.name]) && (formData[element.name] as string[]).length === element.choices?.length ? 'selected' : ''
+                                        }`}
+                                        onClick={() => {
+                                            const allValues = element.choices?.map((c: any) => c.value) || []; // eslint-disable-line @typescript-eslint/no-explicit-any
+                                            handleAnswer(element.name, allValues);
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('none')}
+                                            readOnly
+                                            className="mr-3"
+                                        />
+                                        <span className="font-semibold">{element.selectAllText}</span>
+                                    </div>
+                                )}
+                                <div
+                                    className="checkbox-option clear"
+                                    onClick={() => {
+                                        handleAnswer(element.name, []);
+                                    }}
+                                >
+                                    <span className="font-medium text-red-600">Clear All</span>
+                                </div>
+                            </div>
+                            {element.showNoneItem && (
+                                <div className="mt-4">
+                                    <div
+                                        className={`checkbox-option ${
+                                            Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('none') ? 'selected' : ''
+                                        }`}
+                                        onClick={() => {
+                                            handleAnswer(element.name, ['none']);
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('none')}
+                                            readOnly
+                                            className="mr-3"
+                                        />
+                                        <span className="font-medium">{element.noneText}</span>
+                                    </div>
                                 </div>
                             )}
-                            <div
-                                className="checkbox-option clear"
-                                onClick={() => {
-                                    handleAnswer(element.name, []);
-                                }}
-                            >
-                                <span className="font-medium text-red-600">Clear All</span>
-                            </div>
                         </div>
-                        {element.showNoneItem && (
-                            <div className="mt-4">
-                                <div
-                                    className={`checkbox-option ${
-                                        Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('none') ? 'selected' : ''
-                                    }`}
-                                    onClick={() => {
-                                        handleAnswer(element.name, ['none']);
-                                    }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={Array.isArray(formData[element.name]) && (formData[element.name] as string[]).includes('none')}
-                                        readOnly
-                                        className="mr-3"
-                                    />
-                                    <span className="font-medium">{element.noneText}</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
+                    );
+                }
 
             case 'rating':
                 return (
@@ -441,54 +514,142 @@ export default function QuizPage() {
             );
 
             case 'text':
-                return (
-                    <div key={element.name} className="mb-8">
-                        <h3 className="text-xl font-bold mb-6 text-[#254569] leading-relaxed border-b-2 border-amber-200 pb-3 relative">
-                            <div className="text-[#254569] font-bold">
+                // Check if this is the final page (contact info page)
+                const isContactPage = currentPage === totalPages - 1;
+                
+                if (isContactPage) {
+                    // Check if user has opted out of providing personal details
+                    const hasOptedOut = Array.isArray(formData.opt_out) && formData.opt_out.includes('opt_out');
+                    
+                    // Hide personal details fields if user has opted out
+                    if (hasOptedOut && ['name', 'email', 'phone'].includes(element.name)) {
+                        return null;
+                    }
+
+                    const getFieldIcon = (fieldName: string) => {
+                        switch (fieldName.toLowerCase()) {
+                            case 'name':
+                                return (
+                                    <svg className="contact-field-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                    </svg>
+                                );
+                            case 'email':
+                                return (
+                                    <svg className="contact-field-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                    </svg>
+                                );
+                            case 'phone':
+                                return (
+                                    <svg className="contact-field-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                    </svg>
+                                );
+                            default:
+                                return null;
+                        }
+                    };
+
+                    return (
+                        <div key={element.name} className="contact-field">
+                            <label htmlFor={element.name}>
                                 {element.title}
-                            </div>
-                        </h3>
-                        <input
-                            type={element.inputType || 'text'}
-                            className={`input-field ${
-                                validationErrors[element.name] ? 'error' :
-                                    validationSuccess[element.name] ? 'success' : ''
-                            }`}
-                            value={formData[element.name] || ''}
-                            onChange={(e) => {
-                                let value = e.target.value;
+                            </label>
+                            <input
+                                id={element.name}
+                                type={element.inputType || 'text'}
+                                className={`contact-input ${
+                                    validationErrors[element.name] ? 'error' :
+                                        validationSuccess[element.name] ? 'success' : ''
+                                }`}
+                                value={formData[element.name] || ''}
+                                onChange={(e) => {
+                                    let value = e.target.value;
 
-                                // Auto-format phone numbers
-                                if (element.name.toLowerCase().includes('phone')) {
-                                    value = formatIndianPhone(value);
-                                }
+                                    // Auto-format phone numbers
+                                    if (element.name.toLowerCase().includes('phone')) {
+                                        value = formatIndianPhone(value);
+                                    }
 
-                                handleAnswer(element.name, value);
-                            }}
-                            onBlur={(e) => {
-                                // Validate on blur for better UX
-                                if (element.name.toLowerCase().includes('name') ||
-                                    element.name.toLowerCase().includes('email') ||
-                                    element.name.toLowerCase().includes('phone')) {
-                                    validateField(element.name, e.target.value);
-                                }
-                            }}
-                            placeholder={element.placeholder}
-                        />
-                        {validationErrors[element.name] && (
-                            <div className="error-message">
-                                {validationErrors[element.name]}
-                            </div>
-                        )}
-                        {validationSuccess[element.name] && !validationErrors[element.name] && (
-                            <div className="success-message">
-                                {element.name.toLowerCase().includes('name') ? 'Valid name' :
-                                    element.name.toLowerCase().includes('email') ? 'Valid email' :
-                                        element.name.toLowerCase().includes('phone') ? 'Valid phone number' : 'Valid input'}
-                            </div>
-                        )}
-                    </div>
-                );
+                                    handleAnswer(element.name, value);
+                                }}
+                                onBlur={(e) => {
+                                    // Validate on blur for better UX
+                                    if (element.name.toLowerCase().includes('name') ||
+                                        element.name.toLowerCase().includes('email') ||
+                                        element.name.toLowerCase().includes('phone')) {
+                                        validateField(element.name, e.target.value);
+                                    }
+                                }}
+                                placeholder={element.placeholder}
+                            />
+                            {getFieldIcon(element.name)}
+                            {validationErrors[element.name] && (
+                                <div className="contact-validation-message error">
+                                    {validationErrors[element.name]}
+                                </div>
+                            )}
+                            {validationSuccess[element.name] && !validationErrors[element.name] && (
+                                <div className="contact-validation-message success">
+                                    {element.name.toLowerCase().includes('name') ? 'Valid name' :
+                                        element.name.toLowerCase().includes('email') ? 'Valid email' :
+                                            element.name.toLowerCase().includes('phone') ? 'Valid phone number' : 'Valid input'}
+                                </div>
+                            )}
+                        </div>
+                    );
+                } else {
+                    return (
+                        <div key={element.name} className="mb-8">
+                            <h3 className="text-xl font-bold mb-6 text-[#254569] leading-relaxed border-b-2 border-amber-200 pb-3 relative">
+                                <div className="text-[#254569] font-bold">
+                                    {element.title}
+                                </div>
+                            </h3>
+                            <input
+                                type={element.inputType || 'text'}
+                                className={`input-field ${
+                                    validationErrors[element.name] ? 'error' :
+                                        validationSuccess[element.name] ? 'success' : ''
+                                }`}
+                                value={formData[element.name] || ''}
+                                onChange={(e) => {
+                                    let value = e.target.value;
+
+                                    // Auto-format phone numbers
+                                    if (element.name.toLowerCase().includes('phone')) {
+                                        value = formatIndianPhone(value);
+                                    }
+
+                                    handleAnswer(element.name, value);
+                                }}
+                                onBlur={(e) => {
+                                    // Validate on blur for better UX
+                                    if (element.name.toLowerCase().includes('name') ||
+                                        element.name.toLowerCase().includes('email') ||
+                                        element.name.toLowerCase().includes('phone')) {
+                                        validateField(element.name, e.target.value);
+                                    }
+                                }}
+                                placeholder={element.placeholder}
+                            />
+                            {validationErrors[element.name] && (
+                                <div className="error-message">
+                                    {validationErrors[element.name]}
+                                </div>
+                            )}
+                            {validationSuccess[element.name] && !validationErrors[element.name] && (
+                                <div className="success-message">
+                                    {element.name.toLowerCase().includes('name') ? 'Valid name' :
+                                        element.name.toLowerCase().includes('email') ? 'Valid email' :
+                                            element.name.toLowerCase().includes('phone') ? 'Valid phone number' : 'Valid input'}
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
 
             case 'comment':
                 return (
@@ -520,12 +681,13 @@ export default function QuizPage() {
                 <div className="text-center mb-8 ">
                     <div className="flex justify-between items-center mb-6 ">
                         <div></div>
-                        <h1 className="text-8xl font-bold text-[#254569] tracking-tight p-12">
+                        <h1 className="text-3xl font-bold text-[#254569] tracking-tight p-20" style={{fontSize: '2rem !important',paddingBottom:"2rem", lineHeight: '1.2 !important',fontWeight:'bolder', color: '#254569 !important'}}>
                             {json.title}
                         </h1>
                         <a
                             href="/analytics"
-                            className="text-base font-large text-[#254569] hover:text-[#C1A06E] transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-amber-50"
+                            className="text-xl font-semibold text-[#254569] hover:text-[#C1A06E] transition-colors duration-200 px-4 py-3 rounded-lg hover:bg-amber-50"
+                            style={{fontSize: '1.1rem !important', fontWeight: '600 !important'}}
                         >
                             View Analytics →
                         </a>
@@ -562,22 +724,43 @@ export default function QuizPage() {
                     })}
                 </div>
 
-                <div className="question-card">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-[#254569] mb-4 tracking-tight">
-                            {currentPageData.title}
-                        </h2>
-                        {currentPageData.description && (
-                            <p className="text-lg text-[#4a4a4a] leading-relaxed bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/50 shadow-sm max-w-2xl mx-auto">
-                                {currentPageData.description}
-                            </p>
-                        )}
-                    </div>
+                {currentPage === totalPages - 1 ? (
+                    <div className="contact-form">
+                        <div className="contact-form-header">
+                            <h2>{currentPageData.title}</h2>
+                            {currentPageData.description && (
+                                <p>{currentPageData.description}</p>
+                            )}
+                        </div>
 
-                    <div className="space-y-8">
-                        {currentPageData.elements?.map((element: any) => renderElement(element))} {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+                        <div>
+                            {currentPageData.elements?.map((element: any) => renderElement(element))} {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+                        </div>
+
+                        <div className="contact-form-footer">
+                            <div className="privacy-note">
+                                <strong>Privacy Notice:</strong> Your information will be kept confidential and used only for the lucky draw. We respect your privacy and will not share your details with third parties.
+                            </div>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="question-card">
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl font-bold text-[#254569] mb-4 tracking-tight">
+                                {currentPageData.title}
+                            </h2>
+                            {currentPageData.description && (
+                                <p className="text-lg text-[#4a4a4a] leading-relaxed bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200/50 shadow-sm max-w-2xl mx-auto">
+                                    {currentPageData.description}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-8">
+                            {currentPageData.elements?.map((element: any) => renderElement(element))} {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex justify-between items-center mt-8">
                     <button
@@ -592,9 +775,12 @@ export default function QuizPage() {
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting}
-                            className={`btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`btn-submit-contact ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                            {isSubmitting ? 'Submitting...' : 
+                                (Array.isArray(formData.opt_out) && formData.opt_out.includes('opt_out')) 
+                                    ? 'Submit Anonymously' 
+                                    : 'Submit Feedback'}
                         </button>
                     ) : (
                         <button
