@@ -31,7 +31,7 @@ function getValidEntries(submissions: any[]) {
 
 export default async function ValidEntriesPage() {
   // Server-side fetch (Next.js 13+)
-  const { success, data, error } = await getQuizSubmissions();
+  const { data, error } = await getQuizSubmissions();
   const validEntries = data ? getValidEntries(data) : [];
 
   return (
